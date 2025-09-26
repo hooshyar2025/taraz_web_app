@@ -3,7 +3,7 @@ import pandas as pd
 import dropbox
 from io import BytesIO
 
-# ---------- ورود کاربر ----------
+# ---------- ورود ----------
 USERS = {"hossein": "1234", "admin": "admin123", "mahdi": "pass456"}
 
 # ---------- Dropbox ----------
@@ -37,27 +37,22 @@ if not st.session_state.auth:
     if st.button("ورود"):
         if USERS.get(user) == pwd:
             st.session_state.auth = True
-            st.experimental_rerun()
         else:
             st.error("❌ اطلاعات ورود اشتباه است")
 else:
     data = load_excel()
     st.title("📂 مدیریت همه شیت‌ها")
     
-    # نمایش و ویرایش همه شیت‌ها
     for sheet_name, df in data.items():
         st.subheader(f"📝 شیت: {sheet_name}")
         if df.empty:
-            df = pd.DataFrame(columns=["ستون1", "ستون2", "ستون3"])  # ستون پیش‌فرض در حالت خالی
+            df = pd.DataFrame(columns=["ستون1", "ستون2", "ستون3"])  # ستون پیش‌فرض
 
         edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True, key=f"editor_{sheet_name}")
 
-        # ذخیره‌ی تغییرات هر شیت
         if st.button(f"💾 ذخیره تغییرات در {sheet_name}", key=f"save_{sheet_name}"):
             save_sheet(sheet_name, edited_df)
-            st.success(f"✅ تغییرات در شیت '{sheet_name}' ذخیره شد")
-            st.experimental_rerun()
+            st.success(f"✅ تغییرات در '{sheet_name}' ذخیره شد. برای مشاهده کامل، صفحه را Refresh کنید.")
 
     if st.button("🚪 خروج"):
         st.session_state.auth = False
-        st.experimental_rerun()
