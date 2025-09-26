@@ -14,6 +14,17 @@ USERS = {
 ACCESS_TOKEN = "sl.u.AGB_EZ4uw2zZ-WuWOWyeJHe6_MpOGi1xpzvpi_vrPZIJjhwZzSLmSrO4DLaQPJt4INEojwTx4HG9BjTSZbjgG-GKaNBIOixd7aqHh7jqBg6rg5S2tMYJnHUm_dvcjw5swEfAZfQl_b2SUlnFZFvy6AlqwvXO3AN7gzUmUsbQKLp7AkUIWNRi5sNyTaqNcsnNHeY9WOKqJhgQCLaCzufFOy1iLzCCD5FLpsYuAFVAiSOsCgpsQYcD4mOilpNJ_OP27EgEJZ6POMRG2lx0kXTJHOn8YZ3jgF5L6AhJaOjymr8nYYaCzzAPCxtW3v95sslzZfQxyB1TLt9ItI6ZhC3YXDE0JsdOxEMslAaXVp9gW-cAHDqoTQbvhOEGUD-cpnW6vDVl8FHm4A2EdHGvi-jdPp4VxxykP2V95wGddwT2OUp9ZrVumVworBCLtAET2KOxAL05buacenVYulHgwyM8_BrsNgnECNO5vA3EHceGOmFWk199shwgQNqBry99R70vqduEjqALV9fnIvZfrVaPR56s2o5BAZLCBs5CnFwbLK1L-j98eLIzJMVQj2a_UPWjkQ7QbJfQc7_eWpvPNB6-CrgMTR17-KWgdPxYUsCKLNsCntqhovhRmpr2mPn_jyNiFFvH0nnbCAQOtZlB0F3MQUecqVwesfOvjt2mK7ff-PltqUispBa-OAqk-V_pAj3__jABxx1Js6NeZqh0oiAonR9TX0KYpa1of8zmXFW_jUvmTNLgTivhTSe3uRNml1so2NCaNb36gNqRc4T4q91jJb3hrrbNY3URKBgylhNQrbYknwdjBOhyMECSZ2-gaviRNMUZMFXG1Vv5tw8k8n96wWxTlKJ2FlE4Q6tSnQ_4DQXK9XbbKNUwCY5UABdVAVc71bonSg0aGfMZMWP23gXkQKgNFgUjtDFT82zHOTujQPYUAAmuou9iPdTfJDNs1fHjL4ha3IFNNEjMi0VJxu_twT09zOinOncapOODt3ZD3220lzanhpbaydngvwrTkHxUeqXf1LSiO7YkqvkMkfqK5hCRxuj4GlwvfqfyvsQXy5K8s4SAwziToYgFGD6DbebDKbdyQMUyDQhM_5qoLE8rDdqAXX6-h5_Onw7mQID2jJ2KLsqdWnEAN8ROBo4Q2ajt57X-3qxJXAIJ6tFXGQXvvHEsus-7QraE4qYtyCT9QRlouLbndBBZ95d0YaqbH6EUNQI2nxU4g_tkZIM4rJqyPlJjrt-9MNL98ngjbb69-yYFf9eDFMhxVqVfsDWcyycZhyN59yQMQ-MClVYFAB1dj9VBIAv1_HvNageorrd2G6GgTTXxJcizmBTbor7zfcuzpWF283rTbmw2aa0I-wheVh86hSXKYfUWEbv3docGJA7iRcIKAX8FOFeHzHiG6wEtVCGq0A1boFdJ8oDA04L0I3wEuSYYYRnJV6Q6S3PpMeh_6g"
 FILE_PATH = "/taraz_web/mali1405.xlsx"
 
+# ---------- تابع تست مسیر ----------
+def list_dropbox_files():
+    dbx = dropbox.Dropbox(ACCESS_TOKEN)
+    try:
+        res = dbx.files_list_folder("", recursive=True)
+        st.write("📂 مسیرها و فایل‌های مجاز در این توکن:")
+        for entry in res.entries:
+            st.write(" -", entry.path_display)
+    except Exception as e:
+        st.error(f"❌ خطا در دریافت لیست مسیرها: {e}")
+
 # ---------- توابع Dropbox ----------
 def load_excel():
     dbx = dropbox.Dropbox(ACCESS_TOKEN)
@@ -29,7 +40,7 @@ def save_excel(dfs_dict):
     dbx = dropbox.Dropbox(ACCESS_TOKEN)
     dbx.files_upload(buffer.getvalue(), FILE_PATH, mode=dropbox.files.WriteMode.overwrite)
 
-# ---------- فرم ورود ----------
+# ---------- ورود و نمایش ----------
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
@@ -40,52 +51,59 @@ if not st.session_state.auth:
     if st.button("ورود"):
         if USERS.get(username) == password:
             st.session_state.auth = True
-            st.success("ورود موفق ✅")
+            st.success("✅ ورود موفق")
             st.rerun()
         else:
-            st.error("نام کاربری یا رمز عبور اشتباه است")
+            st.error("❌ نام کاربری یا رمز عبور اشتباه")
 else:
-    data = load_excel()
+    # مرحله ۱: نمایش لیست فایل‌ها
+    list_dropbox_files()
 
-    # Sheet1
-    st.header("📋 جدول مخاطبان جدید")
-    df_customers = data.get("Sheet1", pd.DataFrame())
-    st.dataframe(df_customers, use_container_width=True)
-    with st.expander("➕ افزودن مخاطب جدید"):
-        new_data = {col: st.text_input(f"{col}") for col in df_customers.columns}
-        if st.button("ثبت مخاطب"):
-            df_customers = df_customers._append(new_data, ignore_index=True)
-            data["Sheet1"] = df_customers
-            save_excel(data)
-            st.success("مخاطب جدید اضافه شد ✅")
+    # مرحله ۲: تلاش برای بارگیری فایل و نمایش شیت‌ها
+    try:
+        data = load_excel()
+
+        # Sheet1
+        st.header("📋 جدول مخاطبان جدید")
+        df_customers = data.get("Sheet1", pd.DataFrame())
+        st.dataframe(df_customers, use_container_width=True)
+        with st.expander("➕ افزودن مخاطب جدید"):
+            new_data = {col: st.text_input(col) for col in df_customers.columns}
+            if st.button("ثبت مخاطب"):
+                df_customers = df_customers._append(new_data, ignore_index=True)
+                data["Sheet1"] = df_customers
+                save_excel(data)
+                st.success("✅ مخاطب جدید اضافه شد")
+                st.rerun()
+
+        # mali1
+        st.header("💰 جدول امور مالی")
+        df_mali1 = data.get("mali1", pd.DataFrame())
+        st.dataframe(df_mali1, use_container_width=True)
+        with st.expander("➕ ثبت خدمات/هزینه"):
+            mali1_data = {col: st.text_input(col) for col in df_mali1.columns}
+            if st.button("ثبت خدمات"):
+                df_mali1 = df_mali1._append(mali1_data, ignore_index=True)
+                data["mali1"] = df_mali1
+                save_excel(data)
+                st.success("✅ خدمات جدید ثبت شد")
+                st.rerun()
+
+        # mali2
+        st.header("💳 جدول پرداخت‌ها و سررسیدها")
+        df_mali2 = data.get("mali2", pd.DataFrame())
+        st.dataframe(df_mali2, use_container_width=True)
+        with st.expander("➕ ثبت پرداختی/سررسید"):
+            mali2_data = {col: st.text_input(col) for col in df_mali2.columns}
+            if st.button("ثبت پرداختی"):
+                df_mali2 = df_mali2._append(mali2_data, ignore_index=True)
+                data["mali2"] = df_mali2
+                save_excel(data)
+                st.success("✅ پرداخت جدید ثبت شد")
+                st.rerun()
+
+        if st.button("🚪 خروج"):
+            st.session_state.auth = False
             st.rerun()
-
-    # mali1
-    st.header("💰 جدول امور مالی")
-    df_mali1 = data.get("mali1", pd.DataFrame())
-    st.dataframe(df_mali1, use_container_width=True)
-    with st.expander("➕ ثبت خدمات/هزینه"):
-        mali1_data = {col: st.text_input(f"{col}") for col in df_mali1.columns}
-        if st.button("ثبت خدمات"):
-            df_mali1 = df_mali1._append(mali1_data, ignore_index=True)
-            data["mali1"] = df_mali1
-            save_excel(data)
-            st.success("خدمات جدید ثبت شد ✅")
-            st.rerun()
-
-    # mali2
-    st.header("💳 جدول پرداخت‌ها و سررسیدها")
-    df_mali2 = data.get("mali2", pd.DataFrame())
-    st.dataframe(df_mali2, use_container_width=True)
-    with st.expander("➕ ثبت پرداختی/سررسید"):
-        mali2_data = {col: st.text_input(f"{col}") for col in df_mali2.columns}
-        if st.button("ثبت پرداختی"):
-            df_mali2 = df_mali2._append(mali2_data, ignore_index=True)
-            data["mali2"] = df_mali2
-            save_excel(data)
-            st.success("پرداختی جدید ثبت شد ✅")
-            st.rerun()
-
-    if st.button("🚪 خروج"):
-        st.session_state.auth = False
-        st.rerun()
+    except Exception as e:
+        st.error(f"❌ خطا در بارگیری فایل: {e}")
