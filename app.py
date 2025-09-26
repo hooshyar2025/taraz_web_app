@@ -42,7 +42,7 @@ if not st.session_state.auth:
         if USERS.get(username) == password:
             st.session_state.auth = True
             st.success("ورود موفق ✅")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("نام کاربری یا رمز عبور اشتباه است")
 else:
@@ -58,7 +58,7 @@ else:
             data["Sheet1"] = df_customers
             save_excel(data)
             st.success("مخاطب جدید اضافه شد ✅")
-            st.experimental_rerun()
+            st.rerun()
 
     st.header("💰 جدول امور مالی")
     df_mali1 = data.get("mali1", pd.DataFrame())
@@ -70,7 +70,7 @@ else:
             data["mali1"] = df_mali1
             save_excel(data)
             st.success("خدمات جدید ثبت شد ✅")
-            st.experimental_rerun()
+            st.rerun()
 
     st.header("💳 جدول پرداخت‌ها و سررسیدها")
     df_mali2 = data.get("mali2", pd.DataFrame())
@@ -82,8 +82,8 @@ else:
             data["mali2"] = df_mali2
             save_excel(data)
             st.success("پرداختی جدید ثبت شد ✅")
-            st.experimental_rerun()
+            st.rerun()
 
     if st.button("🚪 خروج"):
         st.session_state.auth = False
-        st.experimental_rerun()
+        st.rerun()
