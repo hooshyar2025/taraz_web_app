@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import dropbox
 from io import BytesIO
+import uuid
 
 # ---------- تنظیمات ورود ----------
 USERS = {
@@ -11,7 +12,7 @@ USERS = {
 }
 
 # ---------- تنظیمات Dropbox ----------
-ACCESS_TOKEN = "..."  # توکن جدیدت رو اینجا بذار
+ACCESS_TOKEN = "<<<توکن جدید>>>"
 FILE_PATH = "/taraz_web/mali1405.xlsx"
 
 # ---------- توابع Dropbox ----------
@@ -51,10 +52,14 @@ else:
     # ---------- data (مخاطبان) ----------
     st.header("📋 جدول مخاطبان")
     df_data = data_dict.get("data", pd.DataFrame())
+    if df_data.empty:
+        df_data = pd.DataFrame(columns=["نام", "شماره", "آدرس"])
     st.dataframe(df_data, use_container_width=True)
     with st.expander("➕ افزودن مخاطب جدید"):
-        new_data = {col: st.text_input(f"{col}", key=f"data_{col}") for col in df_data.columns}
-        if st.button("ثبت مخاطب", key="btn_data"):
+        new_data = {}
+        for col in df_data.columns:
+            new_data[col] = st.text_input(f"{col}", key=f"data_{col}_{uuid.uuid4()}")
+        if st.button("ثبت مخاطب", key=f"btn_data_{uuid.uuid4()}"):
             df_data = df_data._append(new_data, ignore_index=True)
             data_dict["data"] = df_data
             save_excel(data_dict)
@@ -66,8 +71,10 @@ else:
     df_mali1 = data_dict.get("mali1", pd.DataFrame())
     st.dataframe(df_mali1, use_container_width=True)
     with st.expander("➕ ثبت خدمات/هزینه"):
-        mali1_data = {col: st.text_input(f"{col}", key=f"mali1_{col}") for col in df_mali1.columns}
-        if st.button("ثبت خدمات", key="btn_mali1"):
+        mali1_data = {}
+        for col in df_mali1.columns:
+            mali1_data[col] = st.text_input(f"{col}", key=f"mali1_{col}_{uuid.uuid4()}")
+        if st.button("ثبت خدمات", key=f"btn_mali1_{uuid.uuid4()}"):
             df_mali1 = df_mali1._append(mali1_data, ignore_index=True)
             data_dict["mali1"] = df_mali1
             save_excel(data_dict)
@@ -79,8 +86,10 @@ else:
     df_mali2 = data_dict.get("mali2", pd.DataFrame())
     st.dataframe(df_mali2, use_container_width=True)
     with st.expander("➕ ثبت پرداختی/سررسید"):
-        mali2_data = {col: st.text_input(f"{col}", key=f"mali2_{col}") for col in df_mali2.columns}
-        if st.button("ثبت پرداختی", key="btn_mali2"):
+        mali2_data = {}
+        for col in df_mali2.columns:
+            mali2_data[col] = st.text_input(f"{col}", key=f"mali2_{col}_{uuid.uuid4()}")
+        if st.button("ثبت پرداختی", key=f"btn_mali2_{uuid.uuid4()}"):
             df_mali2 = df_mali2._append(mali2_data, ignore_index=True)
             data_dict["mali2"] = df_mali2
             save_excel(data_dict)
@@ -92,8 +101,10 @@ else:
     df_chik = data_dict.get("chik", pd.DataFrame())
     st.dataframe(df_chik, use_container_width=True)
     with st.expander("➕ افزودن رکورد جدید به chik"):
-        chik_data = {col: st.text_input(f"{col}", key=f"chik_{col}") for col in df_chik.columns}
-        if st.button("ثبت chik", key="btn_chik"):
+        chik_data = {}
+        for col in df_chik.columns:
+            chik_data[col] = st.text_input(f"{col}", key=f"chik_{col}_{uuid.uuid4()}")
+        if st.button("ثبت chik", key=f"btn_chik_{uuid.uuid4()}"):
             df_chik = df_chik._append(chik_data, ignore_index=True)
             data_dict["chik"] = df_chik
             save_excel(data_dict)
@@ -105,8 +116,10 @@ else:
     df_moshawre = data_dict.get("moshawre", pd.DataFrame())
     st.dataframe(df_moshawre, use_container_width=True)
     with st.expander("➕ افزودن رکورد جدید به moshawre"):
-        moshawre_data = {col: st.text_input(f"{col}", key=f"moshawre_{col}") for col in df_moshawre.columns}
-        if st.button("ثبت moshawre", key="btn_moshawre"):
+        moshawre_data = {}
+        for col in df_moshawre.columns:
+            moshawre_data[col] = st.text_input(f"{col}", key=f"moshawre_{col}_{uuid.uuid4()}")
+        if st.button("ثبت moshawre", key=f"btn_moshawre_{uuid.uuid4()}"):
             df_moshawre = df_moshawre._append(moshawre_data, ignore_index=True)
             data_dict["moshawre"] = df_moshawre
             save_excel(data_dict)
@@ -114,6 +127,6 @@ else:
             st.experimental_rerun()
 
     # ---------- خروج ----------
-    if st.button("🚪 خروج", key="btn_logout"):
+    if st.button("🚪 خروج", key=f"btn_logout_{uuid.uuid4()}"):
         st.session_state.auth = False
         st.experimental_rerun()
