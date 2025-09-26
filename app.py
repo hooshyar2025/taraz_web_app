@@ -3,28 +3,48 @@ import pandas as pd
 import dropbox
 from io import BytesIO
 
-# ---------- ورود ----------
-USERS = {"hossein": "1234", "admin": "admin123", "mahdi": "pass456"}
+# ---------- تنظیمات ورود ----------
+USERS = {
+    "hossein": "1234",
+    "admin": "admin123",
+    "mahdi": "pass456"
+}
 
-# ---------- Dropbox ----------
-ACCESS_TOKEN = "اینجا_توکن_واقعی"
+# ---------- تنظیمات Dropbox ----------
+ACCESS_TOKEN = "<<<توکن واقعی شما>>>"
 FILE_PATH = "/taraz_web/mali1405.xlsx"
 
-def load_excel():
-    dbx = dropbox.Dropbox(ACCESS_TOKEN)
-    _, res = dbx.files_download(FILE_PATH)
-    xls = pd.ExcelFile(BytesIO(res.content), engine="openpyxl")
-    return {sheet: pd.read_excel(xls, sheet_name=sheet) for sheet in xls.sheet_names}
+# ---------- تابع تست ASCII ----------
+def find_non_ascii(label, text):
+    bad_chars = [(i, ch, ord(ch)) for i, ch in enumerate(text) if ord(ch) > 127]
+    if bad_chars:
+        st.warning(f"{label} contains non-ASCII characters:")
+        for pos, char, code in bad_chars:
+            st.write(f"Position {pos}: '{char}' (code {code})")
+    else:
+        st.success(f"{label} is clean ASCII ✅")
 
-def save_sheet(sheet_name, df):
-    data = load_excel()
-    data[sheet_name] = df
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        for sheet, content in data.items():
-            content.to_excel(writer, sheet_name=sheet, index=False)
-    dbx = dropbox.Dropbox(ACCESS_TOKEN)
-    dbx.files_upload(buffer.getvalue(), FILE_PATH, mode=dropbox.files.WriteMode.overwrite)
+# ---------- توابع Dropbox ----------
+def load_excel():
+    try:
+        dbx = dropbox.Dropbox(ACCESS_TOKEN)
+        _, res = dbx.files_download(FILE_PATH)
+        xls = pd.ExcelFile(BytesIO(res.content), engine="openpyxl")
+        return {sheet: pd.read_excel(xls, sheet_name=sheet) for sheet in xls.sheet_names}
+    except UnicodeEncodeError as e:
+        st.error(f"Dropbox UnicodeEncodeError: {e}")
+        return {}
+
+def save_excel(dfs_dict):
+    try:
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            for sheet, df in dfs_dict.items():
+                df.to_excel(writer, sheet_name=sheet, index=False)
+        dbx = dropbox.Dropbox(ACCESS_TOKEN)
+        dbx.files_upload(buffer.getvalue(), FILE_PATH, mode=dropbox.files.WriteMode.overwrite)
+    except UnicodeEncodeError as e:
+        st.error(f"Dropbox UnicodeEncodeError while saving: {e}")
 
 # ---------- فرم ورود ----------
 if "auth" not in st.session_state:
@@ -32,27 +52,30 @@ if "auth" not in st.session_state:
 
 if not st.session_state.auth:
     st.title("🔐 ورود به سیستم")
-    user = st.text_input("نام کاربری")
-    pwd = st.text_input("رمز عبور", type="password")
+    username = st.text_input("نام کاربری")
+    password = st.text_input("رمز عبور", type="password")
     if st.button("ورود"):
-        if USERS.get(user) == pwd:
+        if USERS.get(username) == password:
             st.session_state.auth = True
+            st.success("ورود موفق ✅")
+            st.rerun()
         else:
-            st.error("❌ اطلاعات ورود اشتباه است")
+            st.error("نام کاربری یا رمز عبور اشتباه است")
 else:
+    st.subheader("🔍 تست توکن و مسیر Dropbox")
+    find_non_ascii("ACCESS_TOKEN", ACCESS_TOKEN)
+    find_non_ascii("FILE_PATH", FILE_PATH)
+
     data = load_excel()
-    st.title("📂 مدیریت همه شیت‌ها")
-    
-    for sheet_name, df in data.items():
-        st.subheader(f"📝 شیت: {sheet_name}")
-        if df.empty:
-            df = pd.DataFrame(columns=["ستون1", "ستون2", "ستون3"])  # ستون پیش‌فرض
-
-        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True, key=f"editor_{sheet_name}")
-
-        if st.button(f"💾 ذخیره تغییرات در {sheet_name}", key=f"save_{sheet_name}"):
-            save_sheet(sheet_name, edited_df)
-            st.success(f"✅ تغییرات در '{sheet_name}' ذخیره شد. برای مشاهده کامل، صفحه را Refresh کنید.")
-
-    if st.button("🚪 خروج"):
-        st.session_state.auth = False
+    if data:
+        st.header("📋 جدول مخاطبان جدید")
+        df_customers = data.get("Sheet1", pd.DataFrame())
+        st.dataframe(df_customers, use_container_width=True)
+        with st.expander("➕ افزودن مخاطب جدید"):
+            new_data = {col: st.text_input(f"{col}") for col in df_customers.columns}
+            if st.button("ثبت مخاطب"):
+                df_customers = df_customers._append(new_data, ignore_index=True)
+                data["Sheet1"] = df_customers
+                save_excel(data)
+                st.success("مخاطب جدید اضافه شد ✅")
+                st.rerun()
