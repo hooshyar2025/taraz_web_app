@@ -11,24 +11,44 @@ USERS = {
     "mahdi": "pass456"
 }
 
-# ---------- تنظیمات Dropbox ----------
+# ---------- Dropbox ----------
 ACCESS_TOKEN = "<<<توکن جدید>>>"
 FILE_PATH = "/taraz_web/mali1405.xlsx"
 
+# ---------- اعتبارسنجی اولیه ----------
+def is_ascii(s):
+    return all(ord(ch) < 128 for ch in s)
+
+if not is_ascii(ACCESS_TOKEN):
+    st.error("❌ ACCESS_TOKEN شامل کاراکتر غیر ASCII است. آن را دوباره از Dropbox کپی کن.")
+    st.stop()
+
+if not is_ascii(FILE_PATH):
+    st.error("❌ FILE_PATH شامل کاراکتر غیر ASCII است. مسیر فایل باید فقط انگلیسی باشد.")
+    st.stop()
+
 # ---------- توابع Dropbox ----------
 def load_excel():
-    dbx = dropbox.Dropbox(ACCESS_TOKEN)
-    _, res = dbx.files_download(FILE_PATH)
-    xls = pd.ExcelFile(BytesIO(res.content), engine="openpyxl")
-    return {sheet: pd.read_excel(xls, sheet_name=sheet) for sheet in xls.sheet_names}
+    try:
+        dbx = dropbox.Dropbox(ACCESS_TOKEN)
+        _, res = dbx.files_download(FILE_PATH)
+        xls = pd.ExcelFile(BytesIO(res.content), engine="openpyxl")
+        return {sheet: pd.read_excel(xls, sheet_name=sheet) for sheet in xls.sheet_names}
+    except Exception as e:
+        st.error(f"خطا در دانلود فایل از Dropbox: {e}")
+        st.stop()
 
 def save_excel(dfs_dict):
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         for sheet, df in dfs_dict.items():
             df.to_excel(writer, sheet_name=sheet, index=False)
-    dbx = dropbox.Dropbox(ACCESS_TOKEN)
-    dbx.files_upload(buffer.getvalue(), FILE_PATH, mode=dropbox.files.WriteMode.overwrite)
+    try:
+        dbx = dropbox.Dropbox(ACCESS_TOKEN)
+        dbx.files_upload(buffer.getvalue(), FILE_PATH, mode=dropbox.files.WriteMode.overwrite)
+    except Exception as e:
+        st.error(f"خطا در آپلود فایل به Dropbox: {e}")
+        st.stop()
 
 # ---------- فرم ورود ----------
 if "auth" not in st.session_state:
@@ -49,16 +69,14 @@ if not st.session_state.auth:
 else:
     data_dict = load_excel()
 
-    # ---------- data (مخاطبان) ----------
+    # ---------- data ----------
     st.header("📋 جدول مخاطبان")
     df_data = data_dict.get("data", pd.DataFrame())
     if df_data.empty:
         df_data = pd.DataFrame(columns=["نام", "شماره", "آدرس"])
     st.dataframe(df_data, use_container_width=True)
     with st.expander("➕ افزودن مخاطب جدید"):
-        new_data = {}
-        for col in df_data.columns:
-            new_data[col] = st.text_input(f"{col}", key=f"data_{col}_{uuid.uuid4()}")
+        new_data = {col: st.text_input(f"{col}", key=f"data_{col}_{uuid.uuid4()}") for col in df_data.columns}
         if st.button("ثبت مخاطب", key=f"btn_data_{uuid.uuid4()}"):
             df_data = df_data._append(new_data, ignore_index=True)
             data_dict["data"] = df_data
@@ -71,9 +89,7 @@ else:
     df_mali1 = data_dict.get("mali1", pd.DataFrame())
     st.dataframe(df_mali1, use_container_width=True)
     with st.expander("➕ ثبت خدمات/هزینه"):
-        mali1_data = {}
-        for col in df_mali1.columns:
-            mali1_data[col] = st.text_input(f"{col}", key=f"mali1_{col}_{uuid.uuid4()}")
+        mali1_data = {col: st.text_input(f"{col}", key=f"mali1_{col}_{uuid.uuid4()}") for col in df_mali1.columns}
         if st.button("ثبت خدمات", key=f"btn_mali1_{uuid.uuid4()}"):
             df_mali1 = df_mali1._append(mali1_data, ignore_index=True)
             data_dict["mali1"] = df_mali1
@@ -86,9 +102,7 @@ else:
     df_mali2 = data_dict.get("mali2", pd.DataFrame())
     st.dataframe(df_mali2, use_container_width=True)
     with st.expander("➕ ثبت پرداختی/سررسید"):
-        mali2_data = {}
-        for col in df_mali2.columns:
-            mali2_data[col] = st.text_input(f"{col}", key=f"mali2_{col}_{uuid.uuid4()}")
+        mali2_data = {col: st.text_input(f"{col}", key=f"mali2_{col}_{uuid.uuid4()}") for col in df_mali2.columns}
         if st.button("ثبت پرداختی", key=f"btn_mali2_{uuid.uuid4()}"):
             df_mali2 = df_mali2._append(mali2_data, ignore_index=True)
             data_dict["mali2"] = df_mali2
@@ -101,9 +115,7 @@ else:
     df_chik = data_dict.get("chik", pd.DataFrame())
     st.dataframe(df_chik, use_container_width=True)
     with st.expander("➕ افزودن رکورد جدید به chik"):
-        chik_data = {}
-        for col in df_chik.columns:
-            chik_data[col] = st.text_input(f"{col}", key=f"chik_{col}_{uuid.uuid4()}")
+        chik_data = {col: st.text_input(f"{col}", key=f"chik_{col}_{uuid.uuid4()}") for col in df_chik.columns}
         if st.button("ثبت chik", key=f"btn_chik_{uuid.uuid4()}"):
             df_chik = df_chik._append(chik_data, ignore_index=True)
             data_dict["chik"] = df_chik
@@ -116,9 +128,7 @@ else:
     df_moshawre = data_dict.get("moshawre", pd.DataFrame())
     st.dataframe(df_moshawre, use_container_width=True)
     with st.expander("➕ افزودن رکورد جدید به moshawre"):
-        moshawre_data = {}
-        for col in df_moshawre.columns:
-            moshawre_data[col] = st.text_input(f"{col}", key=f"moshawre_{col}_{uuid.uuid4()}")
+        moshawre_data = {col: st.text_input(f"{col}", key=f"moshawre_{col}_{uuid.uuid4()}") for col in df_moshawre.columns}
         if st.button("ثبت moshawre", key=f"btn_moshawre_{uuid.uuid4()}"):
             df_moshawre = df_moshawre._append(moshawre_data, ignore_index=True)
             data_dict["moshawre"] = df_moshawre
